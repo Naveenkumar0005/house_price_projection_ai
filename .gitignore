@@ -8,6 +8,9 @@ venv/
 .mypy_cache/
 *.log
 
+ml/data/*.csv
+ml/data/*.zip
+ml/artifacts/
 # Distribution / packaging
 .Python
 build/

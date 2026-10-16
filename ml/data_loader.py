@@ -15,6 +15,8 @@ TARGET_COLUMN = "SalePrice"
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DEFAULT_CSV_PATH = DATA_DIR / "house_prices_data.csv"
+FALLBACK_CSV_PATH = DATA_DIR / "train.csv"
+KAGGLE_COMPETITION = "house-prices-advanced-regression-techniques"
 
 LOCATION_SCORES = {
     "Rural": 4.0,
@@ -35,7 +37,41 @@ def resolve_csv_path(csv_path: Path | None = None) -> Path:
 
     if DEFAULT_CSV_PATH.exists():
         return DEFAULT_CSV_PATH
+    if FALLBACK_CSV_PATH.exists():
+        return FALLBACK_CSV_PATH
+    return DEFAULT_CSV_PATH
 
+
+def ensure_training_data(csv_path: Path | None = None) -> Path:
+    """Return a local CSV path, downloading from Kaggle when missing."""
+    path = resolve_csv_path(csv_path)
+    if path.exists():
+        return path
+
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    try:
+        import kagglehub
+    except ImportError as exc:
+        raise FileNotFoundError(
+            f"Training data not found at {path}. Place a CSV in {DATA_DIR} "
+            f"(e.g. house_prices.csv), or install kagglehub and authenticate."
+        ) from exc
+
+    print(f"Downloading {KAGGLE_COMPETITION} from Kaggle...")
+    try:
+        download_dir = kagglehub.competition_download(
+            KAGGLE_COMPETITION )
+    except Exception as exc:
+        exc_name = exc.__class__.__name__
+        if exc_name == "UnauthenticatedError":
+            raise FileNotFoundError(
+                f"Training data not found at {path}. Place your CSV in {DATA_DIR}, "
+                f"or authenticate with Kaggle and accept the competition rules at "
+                f"https://www.kaggle.com/c/{KAGGLE_COMPETITION}, then run: "
+                f"python -m ml.download_data"
+            ) from exc
+        raise
 
     downloaded_csv = Path(download_dir) / "train.csv"
     if not downloaded_csv.exists():
@@ -152,7 +188,7 @@ def _finalize_dataset(
 
 def load_training_data(csv_path: Path | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Load training data from CSV, auto-detecting supported formats."""
-    path = csv_path
+    path = csv_path or ensure_training_data()
     df = pd.read_csv(path)
     data_format = _detect_format(list(df.columns))
 
@@ -161,3 +197,6 @@ def load_training_data(csv_path: Path | None = None) -> tuple[np.ndarray, np.nda
     return _load_ames_dataset(df)
 
 
+def load_kaggle_data(csv_path: Path | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Backward-compatible alias for load_training_data."""
+    return load_training_data(csv_path)

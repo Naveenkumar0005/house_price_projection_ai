@@ -9,6 +9,16 @@ The model trains from a CSV in `ml/data/`. Supported formats:
 
 Place your file at `ml/data/house_prices_data.csv`.
 
+### Kaggle House Prices  dataset (alternative)
+
+Place `train.csv` at `ml/data/train.csv`, or download via Kaggle:
+
+Set a custom file path with `TRAINING_DATA_PATH`.
+
+### Download Kaggle data (optional)
+Authenticate with Kaggle (`~/.kaggle/kaggle.json` or `KAGGLE_USERNAME` / `KAGGLE_KEY`).
+ Run:
+
 ```bash
 pip install -r requirements.txt
 python -m ml.download_data
